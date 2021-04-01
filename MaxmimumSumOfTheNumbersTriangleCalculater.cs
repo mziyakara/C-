@@ -69,14 +69,14 @@ namespace MaxmimumSumOfTheNumbers
                 return false;
             }
 
-            for (int i = 3; i <= a; i += 2) //Control for other primes
+            for (int i = 3; (i * i) <= a; i += 2) //Control for other primes
             {
                 if ((a % i) == 0)
                 {
                     return false;
                 }
             }
-            return a == 0;
+            return a != 1; 
 
         }
     }
