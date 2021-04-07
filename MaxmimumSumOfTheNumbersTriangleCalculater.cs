@@ -1,83 +1,135 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 
-namespace MaxmimumSumOfTheNumbers
+internal static class Program
 {
-    class TriangleCalculater
+
+    public static Dictionary<int, bool> PrimeCache = new Dictionary<int, bool>();
+
+    private static void Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            var number = GetNumbers(); //Getting numbers
+        var result = GetInput()
+            .MakeitArray()
+            .MakeitTwoDArray()
+            .MakePrimeNumbersZero()
+            .TravelThroughNumbers();
 
-            string[] lines = number.Split('\n'); //Split numbers
-
-            var matrix = matrixmaking(lines); //Making two dimensional array
-
-            var total = checking(lines, matrix); //Travelling inside numbers
-
-            Console.WriteLine($"Maximum sum of the numbers: {total[0, 0]}"); //Writes total to console
-
-            Console.ReadKey();
-
-        }
-        private static string GetNumbers()
-        {
-            string input = File.ReadAllText(@"numbers.txt"); //Getting numbers from text file
-            return input;
-        }
-        private static int[,] checking(string[] lines, int[,] matrix) //Traveling numbers and calculating maximum sum of the numbers
-        {
-            for (int i = lines.Length - 2; i >= 0; i--)
-            {
-                for (int j = 0; j < lines.Length; j++)
-                {
-
-                    if (!PrimeCheck(matrix[i, j])) //Prime checking
-                    {
-                        matrix[i, j] = Math.Max(matrix[i, j] + matrix[i + 1, j], matrix[i, j] + matrix[i + 1, j + 1]); //Sum of the non prime numbers
-                    }
-                }
-            }
-            return matrix;
-        }
-        private static int[,] matrixmaking(string[] lines) //Making two dimensional array with the giving numbers
-        {
-            int[,] matrix = new int[lines.Length, lines.Length + 1];
-
-            for (int row = 0; row < lines.Length; row++)
-            {
-                var eachnumbers = lines[row].Trim().Split(' '); //Splitting each numbers
-
-                for (int column = 0; column < eachnumbers.Length; column++)
-                {
-                    int number;
-                    int.TryParse(eachnumbers[column], out number);
-                    matrix[row, column] = number;
-                }
-            }
-            return matrix;
-        }
-        public static bool PrimeCheck(int a) //Checking prime numbers 
-        {
-
-            if ((a & 1) == 0)
-            {
-                if (a == 2) //Control for two
-                {
-                    return true;
-                }
-                return false;
-            }
-
-            for (int i = 3; (i * i) <= a; i += 2) //Control for other primes
-            {
-                if ((a % i) == 0)
-                {
-                    return false;
-                }
-            }
-            return a != 1; 
-
-        }
+        Console.WriteLine($"Maximum sum of the non-prime numbers:  {result}");
+        Console.ReadKey();
     }
+
+    private static string GetInput()
+    {
+        string input = File.ReadAllText(@"numbers.txt");
+        return input;
+    }
+
+
+    private static string[] MakeitArray(this string input)
+    {
+        return input.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    private static int[,] MakeitTwoDArray(this string[] Lines)
+    {
+        var lineHolder = new int[Lines.Length, Lines.Length + 1];
+
+        for (var row = 0; row < Lines.Length; row++)
+        {
+            var charactersInLine = Lines[row].takeNumbers();
+
+            for (var column = 0; column < charactersInLine.Length; column++)
+                lineHolder[row, column] = charactersInLine[column];
+        }
+        return lineHolder;
+    }
+
+
+    private static int[] takeNumbers(this string rows)
+    {
+        return
+            Regex
+                .Matches(rows, "[0-9]+")
+                .Cast<Match>()
+                .Select(m => int.Parse(m.Value)).ToArray();
+    }
+
+
+    private static int[,] MakePrimeNumbersZero(this int[,] lineHolder)
+    {
+        var length = lineHolder.GetLength(0);
+        for (var i = 0; i < length; i++)
+        {
+            for (var j = 0; j < length; j++)
+            {
+                if (lineHolder[i, j] == 0)
+                    continue;
+                if (PrimeCheck(lineHolder[i, j]))
+                {
+                    lineHolder[i, j] = 0;
+                }
+            }
+        }
+        return lineHolder;
+    }
+
+    private static int TravelThroughNumbers(this int[,] lineHolder)
+    {
+        var temp = lineHolder;
+        var length = lineHolder.GetLength(0);
+
+
+        for (var i = length - 2; i >= 0; i--)
+        {
+            for (var j = 0; j < length; j++)
+            {
+                var c = temp[i, j];
+                var a = temp[i + 1, j];
+                var b = temp[i + 1, j + 1];
+                if ((!PrimeCheck(c) && !PrimeCheck(a)) || (!PrimeCheck(c) && !PrimeCheck(b)))
+                {
+                    lineHolder[i, j] = c + Math.Max(a, b);
+                }
+
+            }
+        }
+        return lineHolder[0, 0];
+    }
+
+
+    public static bool PrimeCheck(this int number)
+    {
+        if (PrimeCache.ContainsKey(number))
+        {
+            bool value;
+            PrimeCache.TryGetValue(number, out value);
+            return value;
+        }
+
+        if (number == 1|| number == 0)
+        {
+            return false;
+        }
+
+        int counter = 0;
+
+        for (int i = 2; i < number; i++)
+        {
+            if (number % i == 0)
+            {
+                counter++;
+            }
+           
+        }
+        
+        if (counter == 0)
+        {
+            return true;
+        }      
+        return false;
+    }
+
 }
